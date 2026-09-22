@@ -100,70 +100,81 @@ function Login() {
   };
 
   return (
-    <div>
-      <h1>Login</h1>
+    <div className="auth-container">
+      <div className="auth-card">
+        <h1>Login</h1>
 
-      {registerMessage && (
-        <p>{registerMessage}</p>
-      )}
+        <p className="auth-subtitle">
+          Welcome back! Enter your credentials to continue.
+        </p>
 
-      {error && (
-        <p>{error}</p>
-      )}
+        {registerMessage && (
+          <p className="auth-success">{registerMessage}</p>
+        )}
 
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label htmlFor="username">
-            Username
-          </label>
+        {error && (
+          <p className="auth-error">{error}</p>
+        )}
 
-          <input
-            id="username"
-            name="username"
-            type="text"
-            value={formData.username}
-            onChange={handleChange}
-            autoComplete="username"
-          />
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label htmlFor="username">
+              Username
+            </label>
 
-          {fieldErrors.username && (
-            <p>{fieldErrors.username}</p>
-          )}
-        </div>
+            <input
+              id="username"
+              name="username"
+              type="text"
+              value={formData.username}
+              onChange={handleChange}
+              autoComplete="username"
+            />
 
-        <div>
-          <label htmlFor="password">
-            Password
-          </label>
+            {fieldErrors.username && (
+              <p className="field-error">
+                {fieldErrors.username}
+              </p>
+            )}
+          </div>
 
-          <input
-            id="password"
-            name="password"
-            type="password"
-            value={formData.password}
-            onChange={handleChange}
-            autoComplete="current-password"
-          />
+          <div className="form-group">
+            <label htmlFor="password">
+              Password
+            </label>
 
-          {fieldErrors.password && (
-            <p>{fieldErrors.password}</p>
-          )}
-        </div>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              value={formData.password}
+              onChange={handleChange}
+              autoComplete="current-password"
+            />
 
-        <button
-          type="submit"
-          disabled={loading}
-        >
-          {loading ? "Logging in..." : "Login"}
-        </button>
-      </form>
+            {fieldErrors.password && (
+              <p className="field-error">
+                {fieldErrors.password}
+              </p>
+            )}
+          </div>
 
-      <p>
-        Don't have an account?{" "}
-        <Link to="/register">
-          Register
-        </Link>
-      </p>
+          <button
+            type="submit"
+            disabled={loading}
+            className="btn btn-primary auth-submit"
+          >
+            {loading ? "Logging in..." : "Login"}
+          </button>
+        </form>
+
+        <p className="auth-footer">
+          Don't have an account?{" "}
+          <Link to="/register">
+            Register
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }

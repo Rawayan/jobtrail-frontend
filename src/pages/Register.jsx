@@ -88,85 +88,98 @@ function Register() {
   };
 
   return (
-    <div>
-      <h1>Register</h1>
+    <div className="auth-container">
+      <div className="auth-card">
+        <h1>Register</h1>
 
-      {error && (
-        <p>{error}</p>
-      )}
+        <p className="auth-subtitle">
+          Create your account to get started
+        </p>
 
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label htmlFor="username">
-            Username
-          </label>
+        {error && (
+          <p className="auth-error">{error}</p>
+        )}
 
-          <input
-            id="username"
-            name="username"
-            type="text"
-            value={formData.username}
-            onChange={handleChange}
-            autoComplete="username"
-          />
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label htmlFor="username">
+              Username
+            </label>
 
-          {fieldErrors.username && (
-            <p>{fieldErrors.username}</p>
-          )}
-        </div>
+            <input
+              id="username"
+              name="username"
+              type="text"
+              value={formData.username}
+              onChange={handleChange}
+              autoComplete="username"
+            />
 
-        <div>
-          <label htmlFor="email">
-            Email
-          </label>
+            {fieldErrors.username && (
+              <p className="field-error">
+                {fieldErrors.username}
+              </p>
+            )}
+          </div>
 
-          <input
-            id="email"
-            name="email"
-            type="email"
-            value={formData.email}
-            onChange={handleChange}
-            autoComplete="email"
-          />
+          <div className="form-group">
+            <label htmlFor="email">
+              Email
+            </label>
 
-          {fieldErrors.email && (
-            <p>{fieldErrors.email}</p>
-          )}
-        </div>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              value={formData.email}
+              onChange={handleChange}
+              autoComplete="email"
+            />
 
-        <div>
-          <label htmlFor="password">
-            Password
-          </label>
+            {fieldErrors.email && (
+              <p className="field-error">
+                {fieldErrors.email}
+              </p>
+            )}
+          </div>
 
-          <input
-            id="password"
-            name="password"
-            type="password"
-            value={formData.password}
-            onChange={handleChange}
-            autoComplete="new-password"
-          />
+          <div className="form-group">
+            <label htmlFor="password">
+              Password
+            </label>
 
-          {fieldErrors.password && (
-            <p>{fieldErrors.password}</p>
-          )}
-        </div>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              value={formData.password}
+              onChange={handleChange}
+              autoComplete="new-password"
+            />
 
-        <button
-          type="submit"
-          disabled={loading}
-        >
-          {loading ? "Creating account..." : "Register"}
-        </button>
-      </form>
+            {fieldErrors.password && (
+              <p className="field-error">
+                {fieldErrors.password}
+              </p>
+            )}
+          </div>
 
-      <p>
-        Already have an account?{" "}
-        <Link to="/login">
-          Login
-        </Link>
-      </p>
+          <button
+            type="submit"
+            disabled={loading}
+            className="btn btn-primary auth-submit"
+          >
+            {loading ? "Creating account..." : "Register"}
+          </button>
+        </form>
+
+        <p className="auth-footer">
+          Already have an account?{" "}
+          <Link to="/login">
+            Login
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }
