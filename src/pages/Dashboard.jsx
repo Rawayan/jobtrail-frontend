@@ -72,7 +72,7 @@ function Dashboard() {
 
   if (loading) {
     return (
-      <main className="dashboard-page">
+      <main className="dashboard-page page-shell">
         <div className="dashboard-loading">
           <Loader />
         </div>
@@ -82,14 +82,14 @@ function Dashboard() {
 
   if (error) {
     return (
-      <main className="dashboard-page">
+      <main className="dashboard-page page-shell">
         <ErrorState message={error} onRetry={fetchDashboardData} />
       </main>
     );
   }
 
   return (
-    <main className="dashboard-page">
+    <main className="dashboard-page page-shell">
       <section className="dashboard-hero">
         <div className="dashboard-hero-content">
           <span className="dashboard-eyebrow">JOB APPLICATION TRACKER</span>
@@ -219,7 +219,6 @@ function Dashboard() {
       <style>{`
         .dashboard-page {
           min-height: 100vh;
-          padding: 40px 0 80px;
         }
 
         .dashboard-hero {
@@ -472,10 +471,6 @@ function Dashboard() {
         }
 
         @media (max-width: 640px) {
-          .dashboard-page {
-            padding: 24px 0 60px;
-          }
-
           .dashboard-hero {
             gap: 16px;
             margin-bottom: 55px;
