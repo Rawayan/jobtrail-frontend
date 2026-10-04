@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { getApplications } from "../api/applications";
-import { getStats } from "../api/applications";
+import { useAuth } from "../auth/AuthContext";
 
 import StatCard from "../components/StatCard";
 import ApplicationCard from "../components/ApplicationCard";
@@ -10,9 +10,21 @@ import Loader from "../components/Loader";
 import EmptyState from "../components/EmptyState";
 import ErrorState from "../components/ErrorState";
 
+import api from "../api/client";
+
 function Dashboard() {
-  const [stats, setStats] = useState(null);
-  const [applications, setApplications] = useState([]);
+  const { user } = useAuth();
+
+  const [stats, setStats] = useState({
+    total: 0,
+    wishlist: 0,
+    applied: 0,
+    interview: 0,
+    offer: 0,
+    rejected: 0,
+  });
+
+  const [recentApplications, setRecentApplications] = useState([]);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -27,28 +39,31 @@ function Dashboard() {
       setError("");
 
       const [statsResponse, applicationsResponse] = await Promise.all([
-        getStats(),
-        getApplications({
-          ordering: "-created_at",
-          page: 1,
-        }),
+        api.get("/stats/"),
+        getApplications({ ordering: "-created_at" }),
       ]);
 
-      setStats(statsResponse.data);
+      setStats({
+        total: statsResponse.data?.total ?? 0,
+        wishlist: statsResponse.data?.wishlist ?? 0,
+        applied: statsResponse.data?.applied ?? 0,
+        interview: statsResponse.data?.interview ?? 0,
+        offer: statsResponse.data?.offer ?? 0,
+        rejected: statsResponse.data?.rejected ?? 0,
+      });
 
-      const applicationData = applicationsResponse.data;
+      const applicationsData = applicationsResponse?.data;
 
-      if (Array.isArray(applicationData)) {
-        setApplications(applicationData.slice(0, 5));
-      } else {
-        setApplications((applicationData.results || []).slice(0, 5));
-      }
+      const applications =
+        applicationsData?.results ?? applicationsData ?? [];
+
+      setRecentApplications(applications.slice(0, 5));
     } catch (err) {
-      console.error(err);
+      console.error("Dashboard error:", err);
 
       setError(
-        err.response?.data?.detail ||
-          "Unable to load your dashboard right now."
+        err?.response?.data?.detail ||
+          "Unable to load dashboard data. Please try again."
       );
     } finally {
       setLoading(false);
@@ -58,8 +73,8 @@ function Dashboard() {
   if (loading) {
     return (
       <main className="dashboard-page">
-        <div className="dashboard-shell">
-          <Loader text="Preparing your dashboard..." />
+        <div className="dashboard-loading">
+          <Loader />
         </div>
       </main>
     );
@@ -68,500 +83,474 @@ function Dashboard() {
   if (error) {
     return (
       <main className="dashboard-page">
-        <div className="dashboard-shell">
-          <ErrorState
-            title="Dashboard unavailable"
-            message={error}
-            onRetry={fetchDashboardData}
-          />
-        </div>
+        <ErrorState message={error} onRetry={fetchDashboardData} />
       </main>
     );
   }
 
   return (
     <main className="dashboard-page">
-      <div className="dashboard-shell">
-        {/* =========================
-            HERO
-        ========================= */}
+      <section className="dashboard-hero">
+        <div className="dashboard-hero-content">
+          <span className="dashboard-eyebrow">JOB APPLICATION TRACKER</span>
 
-        <section className="dashboard-hero">
-          <div className="dashboard-hero-copy">
-            <span className="dashboard-eyebrow">
-              YOUR CAREER COMMAND CENTER
-            </span>
+          <h1>
+            Welcome back
+            <br />
+            <span>{user?.username || "there"}.</span>
+          </h1>
 
-            <h1>
-              Keep every
-              <br />
-              opportunity <em>moving.</em>
-            </h1>
+          <p>
+            Keep your applications organized, stay on top of opportunities,
+            and move closer to your next role.
+          </p>
 
-            <p>
-              Track your applications, follow your progress, and stay
-              focused on the next opportunity.
-            </p>
-          </div>
+          <div className="dashboard-actions">
+            <Link to="/applications/new" className="primary-button">
+              + Add Application
+            </Link>
 
-          <Link
-            to="/applications/new"
-            className="dashboard-add-button"
-          >
-            <span>+</span>
-            Add application
-          </Link>
-        </section>
-
-        {/* =========================
-            STATS
-        ========================= */}
-
-        <section className="dashboard-stats-section">
-          <div className="dashboard-section-heading">
-            <div>
-              <span className="section-kicker">OVERVIEW</span>
-              <h2>Your application pulse</h2>
-            </div>
-
-            <span className="dashboard-count">
-              {stats?.total || 0} total
-            </span>
-          </div>
-
-          <div className="dashboard-stats-grid">
-            <StatCard
-              title="Total applications"
-              value={stats?.total || 0}
-              icon="◉"
-              variant="teal"
-            />
-
-            <StatCard
-              title="Wishlist"
-              value={stats?.wishlist || 0}
-              icon="✦"
-              variant="lime"
-            />
-
-            <StatCard
-              title="Applied"
-              value={stats?.applied || 0}
-              icon="↗"
-              variant="gold"
-            />
-
-            <StatCard
-              title="Interview"
-              value={stats?.interview || 0}
-              icon="◌"
-              variant="sage"
-            />
-
-            <StatCard
-              title="Offers"
-              value={stats?.offer || 0}
-              icon="✓"
-              variant="lime"
-            />
-
-            <StatCard
-              title="Rejected"
-              value={stats?.rejected || 0}
-              icon="×"
-              variant="danger"
-            />
-          </div>
-        </section>
-
-        {/* =========================
-            RECENT APPLICATIONS
-        ========================= */}
-
-        <section className="dashboard-recent-section">
-          <div className="dashboard-section-heading">
-            <div>
-              <span className="section-kicker">RECENT ACTIVITY</span>
-              <h2>Latest applications</h2>
-            </div>
-
-            <Link
-              to="/applications"
-              className="dashboard-view-all"
-            >
-              View all
-              <span>→</span>
+            <Link to="/applications" className="secondary-button">
+              View Applications →
             </Link>
           </div>
+        </div>
 
-          {applications.length === 0 ? (
-            <EmptyState
-              title="Your journey starts here"
-              message="Add your first job application and start building your career pipeline."
-            />
-          ) : (
-            <div className="dashboard-applications-grid">
-              {applications.map((application) => (
-                <ApplicationCard
-                  key={application.id}
-                  application={application}
-                />
-              ))}
-            </div>
-          )}
-        </section>
-      </div>
+        <div className="dashboard-hero-card">
+          <div className="hero-card-label">APPLICATION OVERVIEW</div>
+
+          <div className="hero-card-number">{stats.total}</div>
+
+          <div className="hero-card-text">
+            {stats.total === 1 ? "active application" : "total applications"}
+          </div>
+
+          <div className="hero-card-line">
+            <span />
+          </div>
+
+          <div className="hero-card-footer">
+            <span>Keep applying.</span>
+            <span>Keep moving.</span>
+          </div>
+        </div>
+      </section>
+
+      <section className="stats-section">
+        <div className="section-heading">
+          <div>
+            <span className="section-eyebrow">YOUR PIPELINE</span>
+            <h2>Application snapshot</h2>
+          </div>
+
+          <Link to="/applications" className="section-link">
+            See all →
+          </Link>
+        </div>
+
+        <div className="stats-grid">
+          <StatCard
+            title="Total"
+            value={stats.total}
+            className="stat-total"
+          />
+
+          <StatCard
+            title="Wishlist"
+            value={stats.wishlist}
+            className="stat-wishlist"
+          />
+
+          <StatCard
+            title="Applied"
+            value={stats.applied}
+            className="stat-applied"
+          />
+
+          <StatCard
+            title="Interview"
+            value={stats.interview}
+            className="stat-interview"
+          />
+
+          <StatCard
+            title="Offer"
+            value={stats.offer}
+            className="stat-offer"
+          />
+
+          <StatCard
+            title="Rejected"
+            value={stats.rejected}
+            className="stat-rejected"
+          />
+        </div>
+      </section>
+
+      <section className="recent-section">
+        <div className="section-heading">
+          <div>
+            <span className="section-eyebrow">LATEST ACTIVITY</span>
+            <h2>Recent applications</h2>
+          </div>
+
+          <Link to="/applications" className="section-link">
+            View all →
+          </Link>
+        </div>
+
+        {recentApplications.length === 0 ? (
+          <EmptyState
+            title="No applications yet"
+            message="Start tracking your job search by adding your first application."
+          />
+        ) : (
+          <div className="recent-applications-grid">
+            {recentApplications.map((application) => (
+              <ApplicationCard
+                key={application.id}
+                application={application}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+
+      <style>{`
+        .dashboard-page {
+          min-height: 100vh;
+          padding: 40px 0 80px;
+        }
+
+        .dashboard-hero {
+          display: grid;
+          grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.65fr);
+          gap: 28px;
+          align-items: stretch;
+          margin-bottom: 80px;
+        }
+
+        .dashboard-hero-content {
+          position: relative;
+          overflow: hidden;
+          min-height: 430px;
+          padding: 56px;
+          border-radius: 40px;
+          background:
+            radial-gradient(
+              circle at 85% 15%,
+              rgba(195, 214, 56, 0.2),
+              transparent 32%
+            ),
+            linear-gradient(
+              135deg,
+              #146c84 0%,
+              #195f70 55%,
+              #0d4d5d 100%
+            );
+          color: #fff;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+        }
+
+        .dashboard-hero-content::after {
+          content: "";
+          position: absolute;
+          width: 220px;
+          height: 220px;
+          right: -80px;
+          bottom: -100px;
+          border-radius: 50%;
+          background: rgba(243, 179, 79, 0.35);
+          filter: blur(2px);
+        }
+
+        .dashboard-eyebrow,
+        .section-eyebrow,
+        .hero-card-label {
+          display: block;
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.16em;
+          text-transform: uppercase;
+        }
+
+        .dashboard-eyebrow {
+          margin-bottom: 18px;
+          color: rgba(255, 255, 255, 0.72);
+        }
+
+        .dashboard-hero h1 {
+          position: relative;
+          z-index: 1;
+          max-width: 760px;
+          margin: 0;
+          font-family: "GT Alpina", Georgia, serif;
+          font-size: clamp(48px, 6vw, 86px);
+          line-height: 0.94;
+          font-weight: 400;
+          letter-spacing: -0.04em;
+        }
+
+        .dashboard-hero h1 span {
+          color: #c3d638;
+        }
+
+        .dashboard-hero-content p {
+          position: relative;
+          z-index: 1;
+          max-width: 590px;
+          margin: 28px 0 0;
+          color: rgba(255, 255, 255, 0.78);
+          font-size: 16px;
+          line-height: 1.7;
+        }
+
+        .dashboard-actions {
+          position: relative;
+          z-index: 2;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 12px;
+          margin-top: 34px;
+        }
+
+        .primary-button,
+        .secondary-button {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 50px;
+          padding: 0 22px;
+          border-radius: 50px;
+          text-decoration: none;
+          font-size: 14px;
+          font-weight: 700;
+          transition:
+            transform 0.2s ease,
+            box-shadow 0.2s ease;
+        }
+
+        .primary-button {
+          background: #c3d638;
+          color: #173d45;
+        }
+
+        .secondary-button {
+          border: 1px solid rgba(255, 255, 255, 0.28);
+          background: rgba(255, 255, 255, 0.1);
+          color: #fff;
+          backdrop-filter: blur(12px);
+        }
+
+        .primary-button:hover,
+        .secondary-button:hover {
+          transform: translateY(-2px);
+        }
+
+        .dashboard-hero-card {
+          min-height: 430px;
+          padding: 36px;
+          border-radius: 40px;
+          background: #cecca1;
+          color: #173d45;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          box-shadow: 0 20px 50px rgba(20, 108, 132, 0.1);
+        }
+
+        .hero-card-label {
+          color: rgba(23, 61, 69, 0.62);
+        }
+
+        .hero-card-number {
+          margin-top: auto;
+          font-family: "GT Alpina", Georgia, serif;
+          font-size: clamp(90px, 11vw, 150px);
+          line-height: 0.8;
+          letter-spacing: -0.06em;
+        }
+
+        .hero-card-text {
+          margin-top: 18px;
+          font-size: 15px;
+          font-weight: 600;
+        }
+
+        .hero-card-line {
+          height: 1px;
+          margin: 28px 0 18px;
+          background: rgba(23, 61, 69, 0.2);
+        }
+
+        .hero-card-line span {
+          display: block;
+          width: 42%;
+          height: 3px;
+          background: #146c84;
+        }
+
+        .hero-card-footer {
+          display: flex;
+          justify-content: space-between;
+          gap: 10px;
+          font-size: 12px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+        }
+
+        .stats-section,
+        .recent-section {
+          margin-bottom: 78px;
+        }
+
+        .section-heading {
+          display: flex;
+          align-items: flex-end;
+          justify-content: space-between;
+          gap: 20px;
+          margin-bottom: 28px;
+        }
+
+        .section-eyebrow {
+          margin-bottom: 9px;
+          color: #61929a;
+        }
+
+        .section-heading h2 {
+          margin: 0;
+          color: #173d45;
+          font-family: "GT Alpina", Georgia, serif;
+          font-size: clamp(34px, 4vw, 52px);
+          line-height: 1;
+          font-weight: 400;
+          letter-spacing: -0.035em;
+        }
+
+        .section-link {
+          color: #146c84;
+          font-size: 13px;
+          font-weight: 700;
+          text-decoration: none;
+          white-space: nowrap;
+        }
+
+        .stats-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 16px;
+        }
+
+        .recent-applications-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 18px;
+        }
+
+        .dashboard-loading {
+          min-height: 70vh;
+          display: grid;
+          place-items: center;
+        }
+
+        @media (max-width: 900px) {
+          .dashboard-hero {
+            grid-template-columns: 1fr;
+          }
+
+          .dashboard-hero-content,
+          .dashboard-hero-card {
+            min-height: 380px;
+          }
+
+          .stats-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+        }
+
+        @media (max-width: 640px) {
+          .dashboard-page {
+            padding: 24px 0 60px;
+          }
+
+          .dashboard-hero {
+            gap: 16px;
+            margin-bottom: 55px;
+          }
+
+          .dashboard-hero-content {
+            min-height: 480px;
+            padding: 34px 26px;
+            border-radius: 30px;
+          }
+
+          .dashboard-hero h1 {
+            font-size: 52px;
+          }
+
+          .dashboard-hero-card {
+            min-height: 330px;
+            padding: 28px;
+            border-radius: 30px;
+          }
+
+          .hero-card-number {
+            font-size: 100px;
+          }
+
+          .dashboard-actions {
+            flex-direction: column;
+            align-items: stretch;
+          }
+
+          .primary-button,
+          .secondary-button {
+            width: 100%;
+          }
+
+          .section-heading {
+            align-items: flex-start;
+            flex-direction: column;
+          }
+
+          .stats-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+          }
+
+          .recent-applications-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .stats-section,
+          .recent-section {
+            margin-bottom: 55px;
+          }
+        }
+
+        @media (max-width: 390px) {
+          .dashboard-hero-content {
+            padding: 28px 20px;
+          }
+
+          .dashboard-hero h1 {
+            font-size: 46px;
+          }
+
+          .dashboard-hero-card {
+            padding: 24px;
+          }
+
+          .stats-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
     </main>
   );
 }
 
 export default Dashboard;
-
-/* =========================
-   DASHBOARD STYLES
-========================= */
-
-const style = document.createElement("style");
-
-style.textContent = `
-.dashboard-page {
-  min-height: calc(100vh - 76px);
-}
-
-.dashboard-shell {
-  width: min(100% - 40px, 1200px);
-  margin: 0 auto;
-  padding: 54px 0 90px;
-}
-
-/* =========================
-   HERO
-========================= */
-
-.dashboard-hero {
-  position: relative;
-  overflow: hidden;
-
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 40px;
-
-  min-height: 355px;
-
-  margin-bottom: 58px;
-  padding: 48px;
-
-  border-radius: 40px;
-
-  background:
-    radial-gradient(
-      circle at 86% 22%,
-      rgba(195, 214, 56, 0.45),
-      transparent 24%
-    ),
-    radial-gradient(
-      circle at 96% 100%,
-      rgba(20, 108, 132, 0.3),
-      transparent 31%
-    ),
-    #e9ead4;
-
-  box-shadow: 0 18px 50px rgba(51, 20, 12, 0.07);
-}
-
-.dashboard-hero::before {
-  content: "";
-
-  position: absolute;
-
-  width: 270px;
-  height: 270px;
-
-  right: 120px;
-  top: -150px;
-
-  border: 1px solid rgba(51, 20, 12, 0.08);
-  border-radius: 50%;
-}
-
-.dashboard-hero::after {
-  content: "";
-
-  position: absolute;
-
-  width: 430px;
-  height: 430px;
-
-  right: -190px;
-  bottom: -260px;
-
-  border: 1px solid rgba(51, 20, 12, 0.08);
-  border-radius: 50%;
-}
-
-.dashboard-hero-copy {
-  position: relative;
-  z-index: 2;
-
-  max-width: 690px;
-}
-
-.dashboard-eyebrow,
-.section-kicker {
-  display: inline-block;
-
-  margin-bottom: 14px;
-
-  color: #146c84;
-
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.13em;
-}
-
-.dashboard-hero h1 {
-  margin: 0;
-
-  color: #33140c;
-
-  font-size: clamp(3.5rem, 7vw, 6.4rem);
-  line-height: 0.87;
-}
-
-.dashboard-hero h1 em {
-  color: #146c84;
-  font-style: italic;
-}
-
-.dashboard-hero p {
-  max-width: 540px;
-
-  margin: 24px 0 0;
-
-  color: #705f57;
-
-  font-size: 0.98rem;
-  line-height: 1.65;
-}
-
-.dashboard-add-button {
-  position: relative;
-  z-index: 3;
-
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-
-  min-height: 50px;
-  padding: 0 20px;
-
-  border-radius: 50px;
-
-  color: #fff;
-  background: #146c84;
-
-  font-size: 0.84rem;
-  font-weight: 700;
-
-  box-shadow: 0 10px 24px rgba(20, 108, 132, 0.22);
-
-  transition:
-    transform 180ms ease,
-    background 180ms ease,
-    box-shadow 180ms ease;
-}
-
-.dashboard-add-button span {
-  font-size: 1.25rem;
-  line-height: 1;
-}
-
-.dashboard-add-button:hover {
-  background: #0c5366;
-  transform: translateY(-3px);
-  box-shadow: 0 15px 30px rgba(20, 108, 132, 0.27);
-}
-
-/* =========================
-   SECTION HEADINGS
-========================= */
-
-.dashboard-stats-section,
-.dashboard-recent-section {
-  margin-bottom: 60px;
-}
-
-.dashboard-section-heading {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 20px;
-
-  margin-bottom: 22px;
-}
-
-.dashboard-section-heading h2 {
-  margin: 0;
-
-  color: #33140c;
-
-  font-size: clamp(2rem, 4vw, 3rem);
-  line-height: 1;
-}
-
-.section-kicker {
-  margin-bottom: 7px;
-
-  color: #61929a;
-}
-
-.dashboard-count {
-  padding: 7px 12px;
-
-  border-radius: 50px;
-
-  color: #705f57;
-  background: #f1eee3;
-
-  font-size: 0.72rem;
-  font-weight: 700;
-}
-
-/* =========================
-   STATS GRID
-========================= */
-
-.dashboard-stats-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 15px;
-}
-
-/* =========================
-   RECENT APPLICATIONS
-========================= */
-
-.dashboard-view-all {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-
-  color: #146c84;
-
-  font-size: 0.82rem;
-  font-weight: 800;
-
-  transition:
-    gap 180ms ease,
-    color 180ms ease;
-}
-
-.dashboard-view-all span {
-  font-size: 1rem;
-}
-
-.dashboard-view-all:hover {
-  gap: 12px;
-  color: #0c5366;
-}
-
-.dashboard-applications-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-}
-
-/* =========================
-   RESPONSIVE
-========================= */
-
-@media (max-width: 900px) {
-  .dashboard-shell {
-    padding-top: 38px;
-  }
-
-  .dashboard-hero {
-    min-height: auto;
-    padding: 38px;
-  }
-
-  .dashboard-hero h1 {
-    font-size: clamp(3rem, 8vw, 5rem);
-  }
-
-  .dashboard-stats-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 700px) {
-  .dashboard-shell {
-    width: min(100% - 28px, 1200px);
-    padding-bottom: 60px;
-  }
-
-  .dashboard-hero {
-    flex-direction: column;
-    align-items: flex-start;
-
-    margin-bottom: 42px;
-    padding: 32px;
-
-    border-radius: 32px;
-  }
-
-  .dashboard-hero h1 {
-    font-size: clamp(3rem, 13vw, 4.5rem);
-  }
-
-  .dashboard-add-button {
-    width: 100%;
-  }
-
-  .dashboard-stats-section,
-  .dashboard-recent-section {
-    margin-bottom: 44px;
-  }
-
-  .dashboard-section-heading {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .dashboard-applications-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 430px) {
-  .dashboard-shell {
-    width: min(100% - 22px, 1200px);
-  }
-
-  .dashboard-hero {
-    padding: 27px 22px;
-    border-radius: 27px;
-  }
-
-  .dashboard-hero h1 {
-    font-size: 3.05rem;
-  }
-
-  .dashboard-hero p {
-    font-size: 0.9rem;
-  }
-
-  .dashboard-stats-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-  }
-
-  .dashboard-section-heading h2 {
-    font-size: 2.15rem;
-  }
-}
-`;
-
-document.head.appendChild(style);
