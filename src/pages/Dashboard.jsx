@@ -52,7 +52,7 @@ function Dashboard() {
         rejected: statsResponse.data?.rejected ?? 0,
       });
 
-      const applicationsData = applicationsResponse?.data;
+      const applicationsData = applicationsResponse;
 
       const applications =
         applicationsData?.results ?? applicationsData ?? [];

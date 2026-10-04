@@ -1,73 +1,104 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+} from "react";
+
+import { loginUser } from "../api/auth";
 
 const AuthContext = createContext(null);
 
+const STORAGE_KEYS = {
+  access: "access",
+  refresh: "refresh",
+  username: "username",
+  email: "email",
+};
+
+const EMPTY_SESSION = {
+  accessToken: null,
+  refreshToken: null,
+  user: null,
+};
+
+function readSession() {
+  const accessToken = localStorage.getItem(STORAGE_KEYS.access);
+  const username = localStorage.getItem(STORAGE_KEYS.username);
+
+  if (!accessToken || !username) {
+    return EMPTY_SESSION;
+  }
+
+  return {
+    accessToken,
+    refreshToken: localStorage.getItem(STORAGE_KEYS.refresh),
+    user: {
+      username,
+      email: localStorage.getItem(STORAGE_KEYS.email) || "",
+    },
+  };
+}
+
+function clearStorage() {
+  Object.values(STORAGE_KEYS).forEach((key) =>
+    localStorage.removeItem(key)
+  );
+}
+
 export function AuthProvider({ children }) {
-  const [accessToken, setAccessToken] = useState(
-    localStorage.getItem("access")
-  );
+  const [session, setSession] = useState(readSession);
 
-  const [refreshToken, setRefreshToken] = useState(
-    localStorage.getItem("refresh")
-  );
+  const login = useCallback(async (username, password) => {
+    const data = await loginUser({ username, password });
 
-  const [username, setUsername] = useState(
-    localStorage.getItem("username")
-  );
+    const user = { username, email: data.user?.email || "" };
 
-  const [loading, setLoading] = useState(true);
+    localStorage.setItem(STORAGE_KEYS.access, data.access);
+    localStorage.setItem(STORAGE_KEYS.refresh, data.refresh);
+    localStorage.setItem(STORAGE_KEYS.username, user.username);
+    localStorage.setItem(STORAGE_KEYS.email, user.email);
 
-  useEffect(() => {
-    const savedAccessToken = localStorage.getItem("access");
-    const savedRefreshToken = localStorage.getItem("refresh");
-    const savedUsername = localStorage.getItem("username");
+    setSession({
+      accessToken: data.access,
+      refreshToken: data.refresh,
+      user,
+    });
 
-    setAccessToken(savedAccessToken);
-    setRefreshToken(savedRefreshToken);
-    setUsername(savedUsername);
-
-    setLoading(false);
+    return user;
   }, []);
 
-  const login = (access, refresh, user) => {
-    localStorage.setItem("access", access);
-    localStorage.setItem("refresh", refresh);
-    localStorage.setItem("username", user);
+  const logout = useCallback(() => {
+    clearStorage();
+    setSession(EMPTY_SESSION);
+  }, []);
 
-    setAccessToken(access);
-    setRefreshToken(refresh);
-    setUsername(user);
-  };
-
-  const logout = () => {
-    localStorage.removeItem("access");
-    localStorage.removeItem("refresh");
-    localStorage.removeItem("username");
-
-    setAccessToken(null);
-    setRefreshToken(null);
-    setUsername(null);
-  };
-
-  const isAuthenticated = Boolean(accessToken);
+  const value = useMemo(
+    () => ({
+      accessToken: session.accessToken,
+      refreshToken: session.refreshToken,
+      user: session.user,
+      isAuthenticated: Boolean(session.accessToken && session.user),
+      login,
+      logout,
+    }),
+    [session, login, logout]
+  );
 
   return (
-    <AuthContext.Provider
-      value={{
-        accessToken,
-        refreshToken,
-        username,
-        isAuthenticated,
-        loading,
-        login,
-        logout,
-      }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
 }
 
 export function useAuth() {
-  return useContext(AuthContext);
+  const context = useContext(AuthContext);
+
+  if (!context) {
+    throw new Error("useAuth must be used inside AuthProvider.");
+  }
+
+  return context;
 }

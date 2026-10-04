@@ -46,9 +46,7 @@ function ApplicationForm() {
       setLoading(true);
       setError("");
 
-      const response = await getApplication(id);
-
-      const data = response.data;
+      const data = await getApplication(id);
 
       setFormData({
         company: data.company || "",

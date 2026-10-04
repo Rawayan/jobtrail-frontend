@@ -37,22 +37,20 @@ function ApplicationList() {
       setLoading(true);
       setError("");
 
-      const response = await getApplications({
+      const data = await getApplications({
         search,
         status,
         page,
       });
-
-      const data = response.data;
 
       if (Array.isArray(data)) {
         setApplications(data);
         setNextPage(null);
         setPreviousPage(null);
       } else {
-        setApplications(data.results || []);
-        setNextPage(data.next);
-        setPreviousPage(data.previous);
+        setApplications(data?.results || []);
+        setNextPage(data?.next || null);
+        setPreviousPage(data?.previous || null);
       }
     } catch (err) {
       console.error(err);
