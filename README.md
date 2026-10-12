@@ -4,6 +4,10 @@ JobTrail is a responsive job application tracking application that helps users m
 
 This repository contains the React frontend for the JobTrail application.
 
+
+## Live Link - 
+ - https://jobtrail-frontend-e4dw.vercel.app/
+
 ## Features
 
 * User registration and login
